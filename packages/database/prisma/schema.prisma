@@ -1,0 +1,261 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Pooled connection (e.g. Neon's pgbouncer endpoint) for the app at runtime.
+  url = env("DATABASE_URL")
+  // Direct (non-pooled) connection for migrations — required by Neon when
+  // DATABASE_URL points at its pooler. Same value as DATABASE_URL for a
+  // plain self-hosted Postgres (Docker/local), where there's no pooler.
+  directUrl = env("DIRECT_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Auth / Users
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  PENDING
+  MEMBER
+  ADMIN
+  MASTER
+}
+
+enum UserStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  discordTag   String?
+  login        String     @unique
+  passwordHash String
+  role         UserRole   @default(PENDING)
+  status       UserStatus @default(PENDING_APPROVAL)
+  approvedById String?
+  approvedAt   DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  characters    Character[]
+  notifications Notification[]
+  auditLogs     AuditLog[]      @relation("AuditLogActor")
+
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Characters
+// ---------------------------------------------------------------------------
+
+enum MarkerTag {
+  MAIN
+  MARKER
+  MAKER
+  FARM
+  PK
+  SUPPORT
+}
+
+model Character {
+  id          String    @id @default(cuid())
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name        String    @unique
+  world       String
+  isPrincipal Boolean   @default(false)
+  markerTag   MarkerTag @default(MARKER)
+
+  // Cached data pulled from RubinOT character page
+  vocation        String?
+  level            Int?
+  residence        String?
+  guildName        String?
+  guildRank        String?
+  lastLoginAt      DateTime?
+  loyaltyTitle     String?
+  achievementPoints Int?
+  lastSyncedAt     DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([world])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Guild state (scraped from /guilds/{name})
+// ---------------------------------------------------------------------------
+
+model GuildMember {
+  id             String    @id @default(cuid())
+  characterName  String    @unique
+  rank           String
+  vocation       String
+  level          Int
+  world          String
+  joinDate       DateTime
+  online         Boolean   @default(false)
+  lastSeenOnlineAt DateTime?
+  lastLevelUpAt  DateTime?
+  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime  @default(now())
+
+  @@index([online])
+  @@index([rank])
+}
+
+model GuildSnapshot {
+  id          String   @id @default(cuid())
+  capturedAt  DateTime @default(now())
+  guildName   String?
+  world       String?
+  logoUrl     String?
+  description String?
+  memberCount Int
+  onlineCount Int
+  avgLevel    Float
+  maxLevel    Int
+  raw         Json
+
+  @@index([capturedAt])
+}
+
+model LevelHistory {
+  id            String    @id @default(cuid())
+  // Plain string, not a hard foreign key: this tracks every guild member
+  // (and any scraped character), most of whom never get a Character row
+  // (that table only holds characters claimed by a registered User).
+  characterName String
+  level         Int
+  recordedAt    DateTime  @default(now())
+
+  @@index([characterName, recordedAt])
+}
+
+enum GuildEventType {
+  JOIN
+  LEAVE
+  PROMOTION
+  DEMOTION
+  LEVEL_UP
+  ONLINE
+  OFFLINE
+  TRANSFER
+  DEATH
+}
+
+model GuildEvent {
+  id            String         @id @default(cuid())
+  type          GuildEventType
+  characterName String
+  payload       Json
+  occurredAt    DateTime       @default(now())
+
+  @@index([type, occurredAt])
+  @@index([characterName])
+}
+
+// Deaths and Transfers are logged for guild members AND for random players
+// seen in the server-wide /deaths and /transfers feeds (used by world
+// monitoring), so characterName is intentionally a loose string, not a
+// foreign key into Character.
+model Death {
+  id            String   @id @default(cuid())
+  characterName String
+  level         Int
+  killer        String
+  mostDamageBy  String?
+  world         String?
+  occurredAt    DateTime
+
+  @@unique([characterName, occurredAt, killer])
+  @@index([characterName])
+  @@index([world, occurredAt])
+}
+
+model Transfer {
+  id            String   @id @default(cuid())
+  characterName String
+  fromWorld     String
+  toWorld       String
+  occurredAt    DateTime
+
+  @@unique([characterName, occurredAt])
+  @@index([characterName])
+  @@index([occurredAt])
+  @@index([toWorld, occurredAt])
+}
+
+model WorldSnapshot {
+  id          String   @id @default(cuid())
+  world       String
+  onlineCount Int
+  capturedAt  DateTime @default(now())
+
+  @@index([world, capturedAt])
+}
+
+// ---------------------------------------------------------------------------
+// Notifications / Logs
+// ---------------------------------------------------------------------------
+
+enum NotificationType {
+  LEVEL_UP
+  TRANSFER
+  NEW_MEMBER
+  MEMBER_LEFT
+  BOSS
+  RANK_CHANGE
+  PROMOTION
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String?
+  user      User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  message   String
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  actor       User?    @relation("AuditLogActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  action      String
+  target      String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([action, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Integrations (TeamSpeak / x3tBot) — MVP stubs. These persist admin-entered
+// connection settings so the panel is ready to plug in a real client later,
+// but no live connection is implemented yet (no credentials available).
+// ---------------------------------------------------------------------------
+
+enum IntegrationKey {
+  TEAMSPEAK
+  X3T_BOT
+}
+
+model IntegrationConfig {
+  id        String         @id @default(cuid())
+  key       IntegrationKey @unique
+  enabled   Boolean        @default(false)
+  config    Json
+  updatedAt DateTime       @updatedAt
+}

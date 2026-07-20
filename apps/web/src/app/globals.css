@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: "Inter", system-ui, sans-serif;
+}
+
+* {
+  border-color: rgba(148, 163, 184, 0.12);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-bg text-ink bg-grid-glow bg-fixed antialiased;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.25);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.4);
+}
+
+@layer components {
+  .glass-panel {
+    @apply relative rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl shadow-glass;
+  }
+
+  .glass-card {
+    @apply glass-panel p-4 transition-all duration-300 hover:border-neon/30 hover:shadow-glow;
+  }
+
+  .stat-value {
+    @apply text-2xl font-bold tracking-tight text-ink;
+  }
+
+  .stat-label {
+    @apply text-xs uppercase tracking-wider text-ink-muted;
+  }
+
+  .neon-text {
+    @apply text-neon-soft drop-shadow-[0_0_8px_rgba(59,130,246,0.6)];
+  }
+
+  .gold-text {
+    @apply text-gold drop-shadow-[0_0_6px_rgba(212,175,55,0.45)];
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-b from-neon-soft to-neon-deep px-4 py-2 text-sm font-semibold text-white shadow-glow transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-medium text-ink-muted transition-colors hover:border-neon/40 hover:text-ink;
+  }
+
+  .input-field {
+    @apply w-full rounded-lg border border-white/10 bg-bg-surface/60 px-3 py-2 text-sm text-ink placeholder-ink-faint outline-none transition-colors focus:border-neon/60 focus:ring-1 focus:ring-neon/40;
+  }
+}

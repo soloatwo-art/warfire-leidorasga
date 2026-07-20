@@ -1,0 +1,32 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "warfire-leidorasga-api",
+  "main": "src/worker.ts",
+  "compatibility_date": "2024-09-23",
+
+  // Builds the container image from apps/api/Dockerfile (one level up from
+  // this folder). Check Cloudflare's current Containers docs for the sizing
+  // tiers available on your account — this product is newer and the exact
+  // field names/tiers can change; treat this file as a starting point.
+  "containers": [
+    {
+      "class_name": "ApiContainer",
+      "image": "../Dockerfile",
+      "max_instances": 2,
+      "instance_type": "standard"
+    }
+  ],
+
+  "durable_objects": {
+    "bindings": [{ "name": "API_CONTAINER", "class_name": "ApiContainer" }]
+  },
+
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ApiContainer"] }],
+
+  // Wakes the (possibly sleeping) container every 3 minutes to run a guild +
+  // world sync cycle — mirrors GUILD_SCRAPE_CRON / WORLD_SCRAPE_CRON from
+  // .env, but driven by Cloudflare instead of the in-process NestJS cron.
+  "triggers": {
+    "crons": ["*/3 * * * *"]
+  }
+}
