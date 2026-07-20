@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { Prisma } from "@warfire/database";
 import { PrismaService } from "../../common/prisma/prisma.service";
 import { UpdateIntegrationDto } from "./dto/update-integration.dto";
 
@@ -29,10 +30,11 @@ export class IntegrationsService {
   }
 
   async update(key: IntegrationKey, dto: UpdateIntegrationDto) {
+    const config = dto.config as unknown as Prisma.InputJsonValue;
     const saved = await this.prisma.integrationConfig.upsert({
       where: { key },
-      update: { enabled: dto.enabled ?? false, config: dto.config },
-      create: { key, enabled: dto.enabled ?? false, config: dto.config },
+      update: { enabled: dto.enabled ?? false, config },
+      create: { key, enabled: dto.enabled ?? false, config },
     });
     return this.toStatusPayload(key, saved);
   }

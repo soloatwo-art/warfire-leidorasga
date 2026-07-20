@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { Prisma } from "@warfire/database";
 import { PrismaService } from "../../common/prisma/prisma.service";
 import { RealtimeGateway } from "../realtime/realtime.gateway";
 import { ParsedGuildPage, ParsedGuildMember } from "../scraper/dto/parsed-guild.dto";
@@ -61,7 +62,11 @@ export class GuildSyncService {
 
     if (events.length > 0) {
       await this.prisma.guildEvent.createMany({
-        data: events.map((e) => ({ type: e.type, characterName: e.characterName, payload: e.payload })),
+        data: events.map((e) => ({
+          type: e.type,
+          characterName: e.characterName,
+          payload: e.payload as unknown as Prisma.InputJsonValue,
+        })),
       });
       for (const event of events) {
         this.realtime.emitGuildEvent({ ...event, occurredAt: new Date().toISOString() });

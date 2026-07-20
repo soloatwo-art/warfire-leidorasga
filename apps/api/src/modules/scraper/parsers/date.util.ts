@@ -24,11 +24,11 @@ export function parsePortugueseDateTime(input: string): Date | null {
   if (!match) return null;
 
   const [, dayStr, monthStr, yearStr, hourStr, minuteStr] = match;
-  const month = PT_MONTHS[monthStr.toLowerCase()];
+  const month = PT_MONTHS[(monthStr ?? "").toLowerCase()];
   if (month === undefined) return null;
 
-  const day = parseInt(dayStr, 10);
-  const year = parseInt(yearStr, 10);
+  const day = parseInt(dayStr ?? "", 10);
+  const year = parseInt(yearStr ?? "", 10);
   const hour = hourStr ? parseInt(hourStr, 10) : 0;
   const minute = minuteStr ? parseInt(minuteStr, 10) : 0;
 
@@ -51,12 +51,12 @@ export function parseSlashDateTime(input: string): Date | null {
   if (!match) return null;
   const [, day, month, year, hour, minute, second] = match;
   return new Date(
-    parseInt(year, 10),
-    parseInt(month, 10) - 1,
-    parseInt(day, 10),
-    parseInt(hour, 10),
-    parseInt(minute, 10),
-    parseInt(second, 10),
+    parseInt(year ?? "", 10),
+    parseInt(month ?? "", 10) - 1,
+    parseInt(day ?? "", 10),
+    parseInt(hour ?? "", 10),
+    parseInt(minute ?? "", 10),
+    parseInt(second ?? "", 10),
   );
 }
 

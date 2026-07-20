@@ -76,7 +76,10 @@ export class RubinotHttpClient implements OnModuleDestroy {
       if (cached) return cached;
     }
 
-    const html = await this.queue.add(() => this.fetchWithThrottle(path));
+    // p-queue's `.add()` types its result as `T | void` (a paused/cleared
+    // queue could resolve without running the task) — we never pause this
+    // queue, so the task's promise always settles with a string here.
+    const html = (await this.queue.add(() => this.fetchWithThrottle(path))) as string;
     await this.redis.set(cacheKey, html, "EX", CACHE_TTL_SECONDS);
     return html;
   }
@@ -108,8 +111,13 @@ export class RubinotHttpClient implements OnModuleDestroy {
     const page = await context.newPage();
 
     try {
+      // "networkidle" never fires here: the page keeps polling small
+      // background endpoints (outfits, boosted creature, etc.) forever, so
+      // there's never 500ms of true silence. Wait for DOM parse instead,
+      // then give the client-side fetch (which populates the actual guild
+      // /character data) a short fixed grace period to land and render.
       const response = await page.goto(url, {
-        waitUntil: "networkidle",
+        waitUntil: "domcontentloaded",
         timeout: NAVIGATION_TIMEOUT_MS,
       });
 
@@ -117,6 +125,13 @@ export class RubinotHttpClient implements OnModuleDestroy {
         throw new Error(`RubinOT retornou status ${response.status()} para ${path}`);
       }
 
+      // The guild table has ~900+ rows and takes longer than a fixed grace
+      // period to fetch+render for every page shape, so wait for an actual
+      // table to show up (client-side fetch done) instead of a blind delay.
+      // Pages with no table (e.g. "not found") just fall through after the
+      // timeout — parsers handle empty content fine.
+      await page.waitForSelector("table", { timeout: 8000 }).catch(() => undefined);
+      await page.waitForTimeout(500);
       const html = await page.content();
 
       if (html.includes(SECURITY_CHECK_MARKER)) {

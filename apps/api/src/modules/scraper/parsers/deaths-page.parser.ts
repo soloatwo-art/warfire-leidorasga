@@ -15,11 +15,11 @@ export function parseDeathsPage(html: string): ParsedGlobalDeath[] {
 
     const characterName = descriptionCell.find("a").first().text().trim();
     const levelMatch = (descriptionCell.html() ?? "").match(/level\s*<strong>(\d+)<\/strong>/i);
-    const level = levelMatch ? parseInt(levelMatch[1], 10) : 0;
+    const level = levelMatch?.[1] ? parseInt(levelMatch[1], 10) : 0;
 
     const afterPor = (descriptionCell.html() ?? "").replace(/^[\s\S]*?\spor\s/i, "");
     const [killerHtml, mostDamageHtml] = afterPor.split(/\(maior dano por/i);
-    const killer = textFromFragment($, killerHtml.replace(/\)?\.?\s*$/, "")) || "desconhecido";
+    const killer = textFromFragment($, (killerHtml ?? "").replace(/\)?\.?\s*$/, "")) || "desconhecido";
     const mostDamageBy = mostDamageHtml
       ? textFromFragment($, mostDamageHtml.replace(/\)\.?\s*$/, ""))
       : null;

@@ -5,6 +5,7 @@ import {
   GuildFeedEventDto,
   GuildMemberDto,
   GuildOverviewDto,
+  MarkerTag,
   UserRole,
 } from "@warfire/shared";
 import { computeActivity } from "../activity/activity.util";
@@ -107,7 +108,7 @@ export class GuildController {
         online: m.online,
         lastSeenOnlineAt: m.lastSeenOnlineAt?.toISOString() ?? null,
         lastLevelUpAt: m.lastLevelUpAt?.toISOString() ?? null,
-        markerTag: character?.markerTag ?? null,
+        markerTag: (character?.markerTag as MarkerTag | undefined) ?? null,
         isPrincipal: character?.isPrincipal ?? false,
         activityLevel: activity.level,
       };

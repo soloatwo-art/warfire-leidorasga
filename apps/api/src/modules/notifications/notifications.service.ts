@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma/prisma.service";
-import { NotificationDto } from "@warfire/shared";
+import { NotificationDto, NotificationType } from "@warfire/shared";
 
 @Injectable()
 export class NotificationsService {
@@ -14,7 +14,7 @@ export class NotificationsService {
 
     return notifications.map((n) => ({
       id: n.id,
-      type: n.type,
+      type: n.type as NotificationType,
       message: n.message,
       read: n.read,
       createdAt: n.createdAt.toISOString(),

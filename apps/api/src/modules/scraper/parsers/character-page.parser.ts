@@ -99,7 +99,7 @@ function parseDeaths($: cheerio.CheerioAPI, $table: cheerio.Cheerio<any>): Parse
 
     const descriptionHtml = $(cells.get(1)).html() ?? "";
     const levelMatch = descriptionHtml.match(/level\s*<span[^>]*>(\d+)<\/span>/i);
-    const level = levelMatch ? parseInt(levelMatch[1], 10) : 0;
+    const level = levelMatch?.[1] ? parseInt(levelMatch[1], 10) : 0;
 
     const afterPor = descriptionHtml.replace(/^[\s\S]*?\spor\s/i, "");
     const [killerHtml, mostDamageHtml] = afterPor.split(/\(maior dano por/i);

@@ -134,7 +134,7 @@ export class CharactersService {
       lastLoginAt: Date | null;
       loyaltyTitle: string | null;
       achievementPoints: number | null;
-      markerTag: MarkerTag;
+      markerTag: string;
       isPrincipal: boolean;
     },
     alternates: { name: string; vocation: string; level: number; world: string }[] = [],
@@ -169,7 +169,7 @@ export class CharactersService {
       lastLoginAt: character.lastLoginAt?.toISOString() ?? null,
       loyaltyTitle: character.loyaltyTitle,
       achievementPoints: character.achievementPoints,
-      markerTag: character.markerTag,
+      markerTag: character.markerTag as MarkerTag,
       isPrincipal: character.isPrincipal,
       activityLevel: activity.level as ActivityLevel,
       levelHistory: levelHistory.map((l) => ({ level: l.level, recordedAt: l.recordedAt.toISOString() })),
