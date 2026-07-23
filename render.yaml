@@ -1,0 +1,75 @@
+databases:
+  - name: warfire-postgres
+    plan: free
+    databaseName: warfire_leidorasga
+    user: warfire
+
+services:
+  - type: web
+    name: warfire-api
+    runtime: docker
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: warfire-postgres
+          property: connectionString
+      - key: DIRECT_URL
+        fromDatabase:
+          name: warfire-postgres
+          property: connectionString
+      # Render's free tier has no permanent managed Redis — use Upstash
+      # (free tier) and paste its rediss:// URL here after creating it.
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: INTERNAL_SYNC_TOKEN
+        generateValue: true
+      - key: MASTER_LOGIN
+        value: ryvzin
+      - key: MASTER_PASSWORD
+        sync: false
+      # No shared cookie domain across *.onrender.com (it's a public
+      # suffix) — leave unset so the cookie just scopes to this API host;
+      # auth.controller.ts switches to SameSite=None automatically in
+      # production when this isn't "localhost".
+      - key: COOKIE_DOMAIN
+        value: none
+      - key: CORS_ORIGIN
+        sync: false # set to the warfire-web URL once it's deployed
+      - key: RUBINOT_BASE_URL
+        value: https://rubinot.com.br
+      - key: RUBINOT_GUILD_NAME
+        value: Warfire Leidorasga
+      - key: RUBINOT_SCRAPER_USER_AGENT
+        value: "WarfireLeidorasgaGuildTool/1.0 (+contato: soloatwo@gmail.com)"
+      - key: RUBINOT_SCRAPER_MIN_DELAY_MS
+        value: "1500"
+      - key: GUILD_SCRAPE_CRON
+        value: "*/3 * * * *"
+      - key: WORLD_SCRAPE_CRON
+        value: "*/5 * * * *"
+      - key: WORLDS_MONITORED
+        value: "Grimoria I,Grimoria II,Grimoria III,Grimoria IV"
+      - key: API_PORT
+        value: "3001"
+
+  - type: web
+    name: warfire-web
+    runtime: docker
+    dockerfilePath: ./apps/web/Dockerfile
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        sync: false # set to the warfire-api URL once it's deployed
+      - key: NEXT_PUBLIC_WS_URL
+        sync: false # same value as NEXT_PUBLIC_API_URL

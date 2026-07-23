@@ -10,6 +10,13 @@ COPY packages/tsconfig/package.json packages/tsconfig/package.json
 RUN pnpm install --no-frozen-lockfile
 
 FROM deps AS build
+# NEXT_PUBLIC_* vars are inlined into the client bundle at build time, not
+# read at runtime — they must be passed as Docker build args (Render's
+# Docker deploys forward configured env vars as build args automatically).
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_WS_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 COPY . .
 RUN pnpm --filter @warfire/shared build
 RUN pnpm --filter @warfire/web build

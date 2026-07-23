@@ -17,8 +17,10 @@ import { AssistantModule } from "./modules/assistant/assistant.module";
 import { IntegrationsModule } from "./modules/integrations/integrations.module";
 import { LogsModule } from "./modules/logs/logs.module";
 import { InternalModule } from "./modules/internal/internal.module";
+import { AppController } from "./app.controller";
 
 @Module({
+  controllers: [AppController],
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
     PrismaModule,

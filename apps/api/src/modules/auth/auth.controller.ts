@@ -84,18 +84,29 @@ export class AuthController {
     const domain = this.config.get<string>("cookieDomain");
     const isProduction = process.env.NODE_ENV === "production";
 
-    res.cookie("access_token", tokens.accessToken, {
+    // Local dev: frontend/backend share "localhost" as a real cookie
+    // domain, so "lax" + an explicit domain works fine.
+    // Split-host deploys (Render, Cloudflare Pages+Container, etc.): the
+    // frontend and API live on two unrelated hosts (often subdomains of a
+    // shared *public* suffix like onrender.com, where browsers refuse a
+    // domain-wide cookie anyway). In that case we omit `domain` entirely —
+    // the cookie just scopes to the API's own host, which is all that's
+    // needed since the frontend only ever talks to that one host — and use
+    // "none" so it's still sent on the frontend's cross-origin fetch calls.
+    const crossSite = isProduction && domain !== "localhost";
+    const cookieOptions = {
       httpOnly: true,
       secure: isProduction,
-      sameSite: "lax",
-      domain,
+      sameSite: crossSite ? ("none" as const) : ("lax" as const),
+      domain: crossSite ? undefined : domain,
+    };
+
+    res.cookie("access_token", tokens.accessToken, {
+      ...cookieOptions,
       maxAge: ACCESS_TOKEN_MAX_AGE_MS,
     });
     res.cookie("refresh_token", tokens.refreshToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: "lax",
-      domain,
+      ...cookieOptions,
       maxAge: REFRESH_TOKEN_MAX_AGE_MS,
       path: "/auth/refresh",
     });

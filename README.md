@@ -155,6 +155,38 @@ Configure em **Cloudflare Pages > Custom domains** para o frontend, e em **Worke
 seu Worker > Triggers > Custom domains** para o backend — assim `CORS_ORIGIN`/`COOKIE_DOMAIN`
 podem apontar para domínios de verdade em vez das URLs `*.pages.dev`/`*.workers.dev`.
 
+## Deploy no Render (opção gratuita)
+
+Alternativa mais simples que a Cloudflare para quem quer só um lugar único e sem custo pra rodar
+tudo. Usa o mesmo `apps/api/Dockerfile` e `apps/web/Dockerfile` já existentes via um Blueprint
+(`render.yaml` na raiz do repo).
+
+**Limitações do tier gratuito** (não são bugs, é como o Render free funciona):
+- Os serviços web gratuitos **dormem após ~15 min sem tráfego** e demoram uns 30-60s pra acordar
+  no próximo acesso — inclusive a conexão WebSocket cai e reconecta depois desse delay.
+- O Postgres gratuito **expira em 90 dias** (precisa recriar ou migrar pra um plano pago depois).
+- Não existe Redis gerenciado gratuito permanente no Render — este projeto usa
+  [Upstash](https://upstash.com) (free tier) para isso, do mesmo jeito que no deploy via Cloudflare.
+
+### Passo a passo
+
+1. Crie um banco Redis grátis em [upstash.com](https://upstash.com) e copie a URL `rediss://...`.
+2. No [dashboard do Render](https://dashboard.render.com), **New > Blueprint**, conecte o
+   repositório GitHub `warfire-leidorasga` — ele detecta o `render.yaml` automaticamente.
+3. Preencha as variáveis marcadas como "vou definir depois" quando o Render pedir:
+   - `REDIS_URL`: a URL do Upstash do passo 1.
+   - `MASTER_PASSWORD`: a senha do usuário MASTER (`ryvzin` por padrão).
+   - `CORS_ORIGIN` (no serviço `warfire-api`): preencha só depois que `warfire-web` tiver uma URL
+     (algo como `https://warfire-web.onrender.com`).
+   - `NEXT_PUBLIC_API_URL` e `NEXT_PUBLIC_WS_URL` (no serviço `warfire-web`): a URL do
+     `warfire-api` depois de criado (`https://warfire-api.onrender.com`).
+4. Depois que ambos os serviços tiverem URL, volte e preencha `CORS_ORIGIN` no `warfire-api` e
+   redeploy os dois serviços (as duas URLs dependem uma da outra, por isso é em duas passadas).
+
+> Se o build do `warfire-web` não pegar `NEXT_PUBLIC_API_URL`/`NEXT_PUBLIC_WS_URL` automaticamente
+> (o Dockerfile espera recebê-las como *build args*), confira em **Settings > Build & Deploy** do
+> serviço se há uma seção para configurar argumentos de build do Docker e defina-as lá também.
+
 ## Fora do escopo do MVP (estrutura pronta, sem integração real)
 
 TeamSpeak Query Server, x3tBot, Metas da Guild, Calendário de Eventos + Presença, Conquistas
