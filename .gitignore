@@ -20,3 +20,7 @@ redis-data/
 .wrangler/
 .vercel/
 .dev.vars
+
+# Stray empty repos GitHub Desktop created here by mistake during setup
+/Warf/
+/Warfire/
